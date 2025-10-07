@@ -1,64 +1,64 @@
+// pages/index.js
 import { useState } from "react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
-  const [result, setResult] = useState("");
+  const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setResult("");
+    setResponse("");
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ prompt }),
       });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Something went wrong");
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
-      setResult(data.output);
+      setResponse(data.message);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <main style={{fontFamily:"Inter,system-ui",maxWidth:760,margin:"40px auto",padding:"0 16px"}}>
-      <h1>AI Cold Email Writer 🔧</h1>
+    <main style={{ fontFamily: "sans-serif", maxWidth: 600, margin: "50px auto", textAlign: "center" }}>
+      <h1>🤖 AI Microservice</h1>
       <form onSubmit={handleSubmit}>
-        <label style={{display:"block",margin:"12px 0 6px"}}>
-          Describe product & target (e.g. "SaaS for restaurants")
-        </label>
-        <input
+        <textarea
+          rows="4"
+          style={{ width: "100%", padding: "10px" }}
+          placeholder="Type your prompt here..."
           value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="product, target audience, tone..."
-          style={{width:"100%",padding:"10px",fontSize:16}}
+          onChange={(e) => setPrompt(e.target.value)}
         />
-        <div style={{marginTop:12}}>
-          <button type="submit" disabled={loading || !prompt} style={{padding:"10px 16px"}}>
-            {loading ? "Generating…" : "Generate"}
-          </button>
-        </div>
+        <br />
+        <button type="submit" disabled={loading || !prompt}>
+          {loading ? "Generating..." : "Generate"}
+        </button>
       </form>
 
-      {error && <p style={{color:"crimson"}}>{error}</p>}
-
-      {result && (
-        <section style={{marginTop:20}}>
-          <h3>Result</h3>
-          <pre style={{whiteSpace:"pre-wrap",padding:12,background:"#f6f8fa",borderRadius:8}}>
-            {result}
-          </pre>
-          <button onClick={() => navigator.clipboard.writeText(result)} style={{marginTop:8}}>
-            Copy
-          </button>
-        </section>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {response && (
+        <div style={{ marginTop: "20px", padding: "10px", background: "#f0f0f0", borderRadius: "8px" }}>
+          <strong>AI says:</strong>
+          <p>{response}</p>
+        </div>
       )}
     </main>
   );
