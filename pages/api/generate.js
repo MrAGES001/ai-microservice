@@ -1,33 +1,35 @@
+// pages/api/generate.js
+
+import OpenAI from "openai";
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
-  const { prompt } = req.body || {};
-  if (!prompt || typeof prompt !== "string") {
-    return res.status(400).json({ error: "Missing prompt" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Only POST requests allowed" });
+  }
+
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ message: "Missing 'prompt' in request body" });
   }
 
   try {
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are a concise, persuasive cold-email writer." },
-          { role: "user", content: `Write a short professional cold email for: ${prompt}. Keep it 3 sentences.` }
-        ],
-        max_tokens: 300,
-        temperature: 0.2
-      })
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const data = await openaiRes.json();
-    const text = data.choices?.[0]?.message?.content ?? "";
-    return res.status(200).json({ output: text });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a helpful AI assistant." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const message = response.choices[0].message.content;
+    res.status(200).json({ message });
+  } catch (error) {
+    console.error("OpenAI API error:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
